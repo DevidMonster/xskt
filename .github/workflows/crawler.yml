@@ -1,42 +1,31 @@
 name: Daily Crawl XS
 
 on:
+  push:
   schedule:
-    - cron: "0 22 * * *"   # 5h sáng Việt Nam (UTC+7)
+    - cron: "0 22 * * *"
   workflow_dispatch:
 
 jobs:
   crawl:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
-        run: |
-          pip install selenium webdriver-manager pytz
+      - run: pip install selenium webdriver-manager pytz
 
-      - name: Install Chrome
-        uses: browser-actions/setup-chrome@v1
+      - uses: browser-actions/setup-chrome@v1
 
-      - name: Run crawler
-        run: |
-          python crawl.py
+      - run: python crawl.py
 
-      - name: Commit & push new data
-        run: |
+      - run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
-          
           git pull --rebase
-          
           git add data.json
           git commit -m "Update lottery data $(date '+%Y-%m-%d')" || echo "No changes"
-          
           git push
