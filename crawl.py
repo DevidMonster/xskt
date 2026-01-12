@@ -5,10 +5,10 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from datetime import datetime, timedelta
 import json
 import time
-import pytz
 
 options = Options()
 options.add_argument("--headless=new")
@@ -18,45 +18,61 @@ options.add_argument("--disable-dev-shm-usage")
 
 service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service, options=options)
-wait = WebDriverWait(driver, 40)
+wait = WebDriverWait(driver, 30)
 
 BASE_URL = "https://ketqua04.net/so-ket-qua"
 results = []
-
-vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
-today = datetime.now(vn_tz)
+today = datetime.now()
 
 for i in range(300):
     day = today - timedelta(days=i)
     date_str = day.strftime("%d-%m-%Y")
 
-    driver.get(BASE_URL)
+    success = False
+    attempts = 0
 
-    input_date = wait.until(EC.presence_of_element_located((By.NAME, "date")))
-    input_date.clear()
-    input_date.send_keys(date_str)
+    while not success and attempts < 3:
+        try:
+            driver.get(BASE_URL)
 
-    driver.execute_script("kqv1.skq_quick_submit(300);")
+            input_date = wait.until(EC.presence_of_element_located((By.NAME, "date")))
+            input_date.clear()
+            input_date.send_keys(date_str)
 
-    wait.until(EC.presence_of_element_located((By.CLASS_NAME, "phoi-size")))
-    time.sleep(1)
+            driver.execute_script("kqv1.skq_quick_submit(300);")
 
-    script = """
-    let arr = [];
-    document.querySelectorAll('.phoi-size').forEach(el => {
-        const txt = el.innerText.trim();
-        if (/^\\d+$/.test(txt)) arr.push(txt);
-    });
-    return arr;
-    """
-    data = driver.execute_script(script)
+            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "phoi-size")))
 
-    results.append({
-        "date": date_str,
-        "numbers": data
-    })
+            script = """
+            let arr = [];
+            document.querySelectorAll('.phoi-size').forEach(el => {
+                const txt = el.innerText.trim();
+                if (/^\\d+$/.test(txt)) arr.push(txt);
+            });
+            return arr;
+            """
+            data = driver.execute_script(script)
 
-    print("✔", date_str, ":", len(data), "số")
+            results.append({
+                "date": date_str,
+                "numbers": data
+            })
+
+            print("✔", date_str, ":", len(data), "số")
+            success = True
+
+        except TimeoutException:
+            attempts += 1
+            print(f"⚠ Timeout {date_str}, retry {attempts}/3")
+            time.sleep(5)
+
+    if not success:
+        print(f"❌ Bỏ qua ngày {date_str}")
+        results.append({
+            "date": date_str,
+            "numbers": []
+        })
+
     time.sleep(0.6)
 
 driver.quit()
