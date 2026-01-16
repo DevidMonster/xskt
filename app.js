@@ -5,7 +5,8 @@ async function loadData() {
   const freq = {};
   data.forEach(day => {
     day.numbers.forEach(n => {
-      freq[n] = (freq[n] || 0) + 1;
+      const lo = n.slice(-2);
+      freq[lo] = (freq[lo] || 0) + 1;
     });
   });
 
@@ -17,7 +18,9 @@ async function loadData() {
   const recentSet = new Set();
 
   data.slice(0, RECENT_DAYS).forEach(day => {
-    day.numbers.forEach(n => recentSet.add(n));
+    day.numbers.forEach(n => {
+      recentSet.add(n.slice(-2));
+    });
   });
 
   const candidates = sorted.filter(item => !recentSet.has(item.number));
@@ -32,7 +35,7 @@ async function loadData() {
     "📅 " + today.toLocaleDateString("vi-VN");
 
   document.getElementById("top1").innerHTML =
-    `🥇 ${pick.number}<div style="font-size:18px;">Dự đoán hôm nay</div>`;
+    `🥇 ${pick.number}<div style="font-size:18px;">Lô có khả năng cao</div>`;
 
   const list = document.getElementById("list");
   list.innerHTML = "";
