@@ -13,17 +13,31 @@ async function loadData() {
     .map(([n, c]) => ({ number: n, count: c }))
     .sort((a, b) => b.count - a.count);
 
+  const RECENT_DAYS = 21;
+  const recentSet = new Set();
+
+  data.slice(0, RECENT_DAYS).forEach(day => {
+    day.numbers.forEach(n => recentSet.add(n));
+  });
+
+  const candidates = sorted.filter(item => !recentSet.has(item.number));
+
   const today = new Date();
+  const dayIndex = Math.floor(today.getTime() / (1000 * 60 * 60 * 24));
+  const pickIndex = dayIndex % candidates.length;
+
+  const pick = candidates[pickIndex];
+
   document.getElementById("today").innerText =
     "📅 " + today.toLocaleDateString("vi-VN");
 
   document.getElementById("top1").innerHTML =
-    `🥇 ${sorted[0].number}<div style="font-size:18px;">Xác suất cao nhất</div>`;
+    `🥇 ${pick.number}<div style="font-size:18px;">Dự đoán hôm nay</div>`;
 
   const list = document.getElementById("list");
   list.innerHTML = "";
 
-  sorted.slice(1, 16).forEach(item => {
+  candidates.slice(0, 15).forEach(item => {
     const div = document.createElement("div");
     div.className = "card";
     div.innerText = item.number;
